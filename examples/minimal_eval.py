@@ -36,7 +36,7 @@ MODEL_CLASSES = {
 
 # consts - need to be changed for different models
 MAX_SEQUENCE_LENGTH = 128
-DATA_DIR = "/home/tailblues/progs/pytorch-transformers/glue/glue_data/MRPC"
+DATA_DIR = "/home/tailblues/progs/glue/glue_data/MRPC"
 CHECKPOINT = "/home/tailblues/temp/MRPC_OUT_TESTING"
 EVAL_BATCH_SIZE = 8
 config_class, model_class, tokenizer_class = MODEL_CLASSES["bert"]
