@@ -14,7 +14,6 @@
 # imports
 from __future__ import absolute_import, division, print_function
 import argparse
-import glob
 import logging
 import os
 import random
@@ -23,18 +22,16 @@ import torch
 import csv
 from torch.utils.data import (DataLoader, RandomSampler, SequentialSampler,
                               TensorDataset)
-from torch.utils.data.distributed import DistributedSampler
 from tensorboardX import SummaryWriter
 from tqdm import tqdm, trange
-from pytorch_transformers import (WEIGHTS_NAME, BertConfig,
-                                  BertForSequenceClassification, BertTokenizer,
+from pytorch_transformers import (BertConfig, BertForSequenceClassification,
+                                  BertTokenizer,
                                   XLMConfig, XLMForSequenceClassification,
-                                  XLMTokenizer, XLNetConfig,
-                                  XLNetForSequenceClassification,
+                                  XLMTokenizer,
+                                  XLNetConfig, XLNetForSequenceClassification,
                                   XLNetTokenizer)
 from pytorch_transformers import AdamW, WarmupLinearSchedule
 from utils_glue import (convert_examples_to_features, InputExample)
-
 
 # globals
 logger = logging.getLogger(__name__)
@@ -42,7 +39,6 @@ logging.basicConfig(format='%(asctime)s - %(levelname)s - %(name)s -   '
                     '%(message)s',
                     datefmt='%m/%d/%Y %H:%M:%S',
                     level=logging.INFO)
-# ALL_MODELS = sum((tuple(conf.pretrained_config_archive_map.keys()) for conf in (BertConfig, XLNetConfig, XLMConfig)), ())
 MODEL_CLASSES = {
     'bert': (BertConfig, BertForSequenceClassification, BertTokenizer),
     'xlnet': (XLNetConfig, XLNetForSequenceClassification, XLNetTokenizer),
@@ -182,7 +178,7 @@ def train(train_dataset, model, tokenizer):
                 model.zero_grad()
                 global_step += 1
 
-                # logging
+                # logging (tb_writer)
                 if (LOCAL_RANK in [-1, 0] and
                         LOGGING_STEPS > 0 and
                         global_step % LOGGING_STEPS == 0):

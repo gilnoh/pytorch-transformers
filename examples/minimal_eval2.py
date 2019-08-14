@@ -5,9 +5,8 @@
 from __future__ import absolute_import, division, print_function
 import logging
 import torch
-from torch.utils.data import (DataLoader, RandomSampler, SequentialSampler,
-                              TensorDataset)
-from tqdm import tqdm, trange
+from torch.utils.data import (DataLoader, SequentialSampler)
+from tqdm import tqdm
 import numpy as np
 from pytorch_transformers import (BertConfig,
                                   BertForSequenceClassification, BertTokenizer,
@@ -15,8 +14,7 @@ from pytorch_transformers import (BertConfig,
                                   XLMTokenizer, XLNetConfig,
                                   XLNetForSequenceClassification,
                                   XLNetTokenizer)
-from utils_glue import (simple_accuracy, convert_examples_to_features,
-                        output_modes, processors, InputExample)
+from utils_glue import (simple_accuracy)
 from minimal_training2 import (load_examples, LABEL_LIST)
 
 
@@ -40,7 +38,6 @@ DATA = "/home/tailblues/progs/glue/mrpc_dev.tsv"
 CHECKPOINT = "/home/tailblues/temp/MRPC_OUT_TESTING2"
 EVAL_BATCH_SIZE = 8
 config_class, model_class, tokenizer_class = MODEL_CLASSES["bert"]
-processor = processors["mrpc"]()
 
 
 # work functions
