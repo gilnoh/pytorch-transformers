@@ -47,33 +47,29 @@ MODEL_CLASSES = {
 
 #
 # consts - need to be changed for different models / configs
-PRETRAINED = "bert-base-uncased"
+PRETRAINED = "bert-base-multilingual-uncased"
+MAX_SEQUENCE_LENGTH = 128
 DO_LOWER_CASE = True
-OUTPUT_DIR = "/home/tailblues/temp/MRPC_OUT_TESTING2"
-# DATA_DIR = "/home/tailblues/progs/glue/glue_data/MRPC"
+OUTPUT_DIR = "/home/tailblues/temp/MRPC_MULTI_TESTING"
 DATA = "/home/tailblues/progs/glue/mrpc_train.tsv"
-config_class, model_class, tokenizer_class = MODEL_CLASSES["bert"]
-# processor = processors["mrpc"]()
-# label_list = processor.get_labels()
 LABEL_LIST = ["0", "1"]
-# NUM_LABELS = len(label_list)
+config_class, model_class, tokenizer_class = MODEL_CLASSES["bert"]
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 # device = torch.device("cpu")  # test this also, to make sure cpu
 
 
 # training params
-MAX_SEQUENCE_LENGTH = 128
 TRAIN_BATCH_SIZE = 8     # aka per-gpu batch size
 NUM_TRAIN_EPOCHS = 3.0
-LEARNING_RATE = 0.00005  # 5e-5
+LEARNING_RATE = 2e-5  # 2e-5, default from run_glue example description
 WEIGHT_DECAY = 0.0
-ADAM_EPSILON = 0.00000001  # 1e-8
+ADAM_EPSILON = 1e-8  # 1e-8, default from run_glue args
 WARMUP_STEPS = 0
 MAX_GRAD_NORM = 1.0
 SEED = 42
 GRADIENT_ACCUMULATION_STEPS = 1
 LOGGING_STEPS = 50
-SAVE_STEPS = 1000
+SAVE_STEPS = 10000
 LOCAL_RANK = -1  # ftm. (local rank not used) changing this won't work
 N_GPU = 1        # ftm. (multi GPU not used) changing this won't work
 FP16 = False
@@ -90,7 +86,7 @@ def set_seed(seed_num):
 
 def train(train_dataset, model, tokenizer):
     """ Train the model """
-    tb_writer = SummaryWriter(logdir=(OUTPUT_DIR + "/runs"))
+    tb_writer = SummaryWriter()
     train_sampler = RandomSampler(train_dataset)
     train_dataloader = DataLoader(
         train_dataset, sampler=train_sampler, batch_size=TRAIN_BATCH_SIZE)

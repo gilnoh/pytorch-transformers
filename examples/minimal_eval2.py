@@ -15,7 +15,7 @@ from pytorch_transformers import (BertConfig,
                                   XLNetForSequenceClassification,
                                   XLNetTokenizer)
 from utils_glue import (simple_accuracy)
-from minimal_training2 import (load_examples, LABEL_LIST)
+from minimal_training2 import (load_examples)
 
 
 # globals including loggers and model class definitions
@@ -34,8 +34,10 @@ MODEL_CLASSES = {
 
 # consts - need to be changed for different models
 MAX_SEQUENCE_LENGTH = 128
+DO_LOWER_CASE = True
+CHECKPOINT = "/home/tailblues/temp/MRPC_MULTI_TESTING"
 DATA = "/home/tailblues/progs/glue/mrpc_dev.tsv"
-CHECKPOINT = "/home/tailblues/temp/MRPC_OUT_TESTING2"
+LABEL_LIST = ["0", "1"]
 EVAL_BATCH_SIZE = 8
 config_class, model_class, tokenizer_class = MODEL_CLASSES["bert"]
 
@@ -102,7 +104,8 @@ def evaluate(eval_dataset, model, tokenizer):
 
 # load model and tokenizer instances
 logger.info("Loading model from the following checkpoint: %s", CHECKPOINT)
-tokenizer = tokenizer_class.from_pretrained(CHECKPOINT)
+tokenizer = tokenizer_class.from_pretrained(CHECKPOINT,
+                                            do_lower_case=DO_LOWER_CASE)
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 # device = torch.device("cpu")
 model = model_class.from_pretrained(CHECKPOINT)
