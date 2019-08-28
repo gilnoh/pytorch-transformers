@@ -9,6 +9,7 @@ import logging
 import timeit
 import torch
 import numpy as np
+import operator
 from pytorch_transformers import (BertConfig,
                                   BertForSequenceClassification, BertTokenizer,
                                   XLMConfig, XLMForSequenceClassification,
@@ -37,8 +38,8 @@ DO_LOWER_CASE = True
 checkpoint = "/home/tailblues/temp/CHITCHAT_MULTI_TESTING"
 config_class, model_class, tokenizer_class = MODEL_CLASSES["bert"]
 LABEL_LIST = ["POSITIVE", "ABOUT_ME", "TALK_WITH_AGENT",
-              "WEATHER", "FAREWELL", "NOT_MEANT",
-              "OPENING", "NEGATIVE", "CURRENT_TIME",
+              "WEATHER", "FAREWELL", "NEGATIVE_NOT_MEANT",
+              "OPENING", "CURRENT_TIME",
               "GREETING", "GRATITUDE", "QUESTION"]
 # load model and tokenizer instances
 logger.info("Loading model from the following checkpoint: %s", checkpoint)
@@ -52,10 +53,10 @@ model.to(device)
 
 # pre-processing
 example1 = InputExample(guid=1,
-                        text_a="Cava",
+                        text_a="verbinden bitte",
                         label="QUESTION")
 example2 = InputExample(guid=2,
-                        text_a="I agree.",
+                        text_a="mitarbeiter",
                         label="QUESTION")
 features = convert_examples_to_features([example1, example2],
                                         LABEL_LIST,
@@ -79,6 +80,7 @@ all_segment_ids = torch.tensor(
 all_label_ids = torch.tensor(
     [f.label_id for f in features], dtype=torch.long).to(device)
 
+
 # actual prediction call
 start = timeit.timeit()  # to measure time
 with torch.no_grad():
@@ -89,13 +91,33 @@ with torch.no_grad():
 #    loss, logits = outputs[:2]
     logits = outputs[0]
     preds = np.argmax(logits.detach().cpu().numpy(), axis=1)
-    probs = torch.nn.functional.softmax(logits, dim=1).detach().cpu().numpy()
+    softmax_probs = (torch.nn.functional.softmax(logits, dim=1)
+                     .detach().cpu().numpy())
+    raw_logits = logits.detach().cpu().numpy()
+    logistic_probs = [(np.exp(x) / (1 + np.exp(x))) for x in logits
+                      .detach().cpu().numpy()]
+    sigmoid_probs = [(1 / (1 + np.exp(-x))) for x in logits
+                     .detach().cpu().numpy()]
+
+    logger.info(logits)  # logits before softmax
+    # logger.info(softmax_probs)   # (pseudo-) prob from softmax
+    # logger.info(logistic_probs)  # alternative prob from logistic f
+
+    # prepare detailed result, logistic prob sorted list of labels
+    probs = softmax_probs
+    result = []
+    for entry in probs:
+        label_scores = []
+        for i in range(len(entry)):
+            tuple = (LABEL_LIST[i], entry[i])
+            label_scores.append(tuple)
+        label_scores.sort(key=operator.itemgetter(1), reverse=True)
+        result.append(label_scores)
+    logger.info(result)
+
+    # finally, shorter version of result
     label_preds = [LABEL_LIST[i] for i in preds]
     label_probs = [max(p) for p in probs]
-
-    # logger.info(loss)
-    # logger.info(logits)  # logits before softmax
-    # logger.info(probs)   # (pseudo-) prob
     logger.info(list(zip(label_preds, label_probs)))   # decision
 
 end = timeit.timeit()

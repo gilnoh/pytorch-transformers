@@ -36,14 +36,10 @@ MODEL_CLASSES = {
 MAX_SEQUENCE_LENGTH = 128
 DO_LOWER_CASE = True
 CHECKPOINT = "/home/tailblues/temp/CHITCHAT_MULTI_TESTING"
-DATA = "/home/tailblues/progs/glue/chitchat-wq-12classes.tsv"
-# LABEL_LIST = ["POSITIVE", "ABOUT_ME", "TALK_WITH_AGENT",
-#               "WEATHER", "FAREWELL", "NOT_MEANT",
-#               "OPENING", "NEGATIVE", "CURRENT_TIME",
-#               "GREETING", "GRATITUDE"]
+DATA = "/home/tailblues/progs/glue/chitchat_updated_11classes.tsv"
 LABEL_LIST = ["POSITIVE", "ABOUT_ME", "TALK_WITH_AGENT",
-              "WEATHER", "FAREWELL", "NOT_MEANT",
-              "OPENING", "NEGATIVE", "CURRENT_TIME",
+              "WEATHER", "FAREWELL", "NEGATIVE_NOT_MEANT",
+              "OPENING", "CURRENT_TIME",
               "GREETING", "GRATITUDE", "QUESTION"]
 EVAL_BATCH_SIZE = 8
 config_class, model_class, tokenizer_class = MODEL_CLASSES["bert"]
