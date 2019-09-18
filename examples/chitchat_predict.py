@@ -1,4 +1,13 @@
-# minimal prediction example code.
+# ChitChat Prediction module.
+# Designed to be imported from MLServer, to provide the ability
+# to call chit-chat classification.
+#
+# Usage:
+# - import the following three methods.
+#   - load_tokenizer: returns tokenizer from given checkpoint path
+#   - load_model: returns classifier model from given checkpoint path
+#   - predict: actually performs prediction on input text
+# - See main() method for minimal usage example.
 #
 # Gil
 
@@ -6,10 +15,8 @@
 # imports
 from __future__ import absolute_import, division, print_function
 import logging
-import timeit
 import torch
 import numpy as np
-import operator
 from pytorch_transformers import (BertConfig,
                                   BertForSequenceClassification, BertTokenizer,
                                   XLMConfig, XLMForSequenceClassification,
@@ -32,10 +39,10 @@ MODEL_CLASSES = {
     'xlm': (XLMConfig, XLMForSequenceClassification, XLMTokenizer),
 }
 
-# consts - need to be changed for different models
+# consts - here, they are bound to specific preset-values
+# model checkpoint must be matched on these values
 MAX_SEQUENCE_LENGTH = 128
 DO_LOWER_CASE = True
-CHECKPOINT = "/home/tailblues/temp/CHITCHAT_MULTI_TESTING"
 LABEL_LIST = ["POSITIVE", "ABOUT_ME", "TALK_WITH_AGENT",
               "WEATHER", "FAREWELL", "NEGATIVE_NOT_MEANT",
               "OPENING", "CURRENT_TIME",
@@ -44,14 +51,6 @@ LABEL_LIST = ["POSITIVE", "ABOUT_ME", "TALK_WITH_AGENT",
 # global variables that are set once
 config_class, model_class, tokenizer_class = MODEL_CLASSES["bert"]
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-# load model and tokenizer instances
-# logger.info("Loading model from the following checkpoint: %s", checkpoint)
-# tokenizer = tokenizer_class.from_pretrained(checkpoint)
-# device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-# # device = torch.device("cpu")
-# model = model_class.from_pretrained(checkpoint)
-# model.eval()  # put the model in eval mode (e.g. no drop out)
-# model.to(device)
 
 
 #
@@ -104,8 +103,6 @@ def predict(model, tokenizer, textlist):
         [f.input_mask for f in features], dtype=torch.long).to(device)
     all_segment_ids = torch.tensor(
         [f.segment_ids for f in features], dtype=torch.long).to(device)
-    all_label_ids = torch.tensor(
-        [f.label_id for f in features], dtype=torch.long).to(device)
 
     # actual prediction call
     with torch.no_grad():
@@ -134,17 +131,17 @@ def predict(model, tokenizer, textlist):
     label_probs = label_probs = [max(p) for p in probs]
 
     # return full results as tuple (decision, decision score, full details)
-    return (label_preds, label_probs, result)
+    return (label_preds, label_probs, result, raw_logits)
 
 
 #
 # main; usage example
 #
 def main():
+    # model checkpoint (previously saved, trained model path)
+    CHECKPOINT = "/Users/tailblues/Google Drive File Stream/My Drive/ML/models/chitchat_multi"
+
     # prepare tokenizer and model, takes time, need to be done only once
-    # note that, saved model CHECKPOINT path (string) is the only param.
-    # all other options like base-model, max seq length, etc are hard coded
-    # in this file, and set at import time.
     tokenizer = load_tokenizer(CHECKPOINT)
     model = load_model(CHECKPOINT)
 
@@ -154,10 +151,12 @@ def main():
                 "How do you feel today?",
                 "das ist nicht was ich meine"]
 
-    (decision, decision_score, details) = predict(model, tokenizer, textlist)
+    (decision, decision_score, details, raw_logits) =\
+        predict(model, tokenizer, textlist)
     logger.info(decision)
     logger.info(decision_score)
     logger.info(details)
+    logger.info(raw_logits)
 
 
 if __name__ == "__main__":
