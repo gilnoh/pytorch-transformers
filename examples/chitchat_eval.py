@@ -46,7 +46,7 @@ config_class, model_class, tokenizer_class = MODEL_CLASSES["bert"]
 
 
 # work functions
-def evaluate(eval_dataset, model, tokenizer):
+def evaluate(eval_dataset, model, tokenizer, device):
     results = {}
 
     # simple, not distributed sampler
@@ -63,7 +63,7 @@ def evaluate(eval_dataset, model, tokenizer):
     preds = None
     out_label_ids = None
     for batch in tqdm(eval_dataloader, desc="Evaluating"):
-        model.eval()
+        # model.eval()
         batch = tuple(t.to(device) for t in batch)
 
         with torch.no_grad():
@@ -104,18 +104,22 @@ def evaluate(eval_dataset, model, tokenizer):
 #
 # main
 #
+def main():
+    # load model and tokenizer instances
+    logger.info("Loading model from the following checkpoint: %s", CHECKPOINT)
+    tokenizer = tokenizer_class.from_pretrained(CHECKPOINT,
+                                                do_lower_case=DO_LOWER_CASE)
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    # device = torch.device("cpu")
+    model = model_class.from_pretrained(CHECKPOINT)
+    model.eval()  # put the model in eval mode (e.g. no drop out)
+    model.to(device)
 
-# load model and tokenizer instances
-logger.info("Loading model from the following checkpoint: %s", CHECKPOINT)
-tokenizer = tokenizer_class.from_pretrained(CHECKPOINT,
-                                            do_lower_case=DO_LOWER_CASE)
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-# device = torch.device("cpu")
-model = model_class.from_pretrained(CHECKPOINT)
-model.eval()  # put the model in eval mode (e.g. no drop out)
-model.to(device)
+    # load evaluation dataset and run eval
+    eval_dataset = load_examples(DATA, LABEL_LIST,
+                                 tokenizer, MAX_SEQUENCE_LENGTH)
+    evaluate(eval_dataset, model, tokenizer, device)
 
-# load evaluation dataset and run eval
-eval_dataset = load_examples(DATA, LABEL_LIST, tokenizer, MAX_SEQUENCE_LENGTH)
-result = evaluate(eval_dataset, model, tokenizer)
-# logger.info(result)
+
+if __name__ == "__main__":
+    main()
