@@ -45,7 +45,7 @@ MAX_GRAD_NORM = 1.0
 SEED = 42
 GRADIENT_ACCUMULATION_STEPS = 1
 LOGGING_STEPS = 50
-SAVE_STEPS = 10000
+SAVE_STEPS = 1000
 LOCAL_RANK = -1  # ftm. (local rank not used) changing this won't work
 N_GPU = 1        # ftm. (multi GPU not used) changing this won't work
 FP16 = False
@@ -60,7 +60,7 @@ def set_seed(seed_num):
     torch.cuda.manual_seed_all(seed_num)
 
 
-def train(train_dataset, model, tokenizer):
+def train(train_dataset, model, tokenizer, output_path):
     """ Train the model """
     tb_writer = SummaryWriter()
     train_sampler = RandomSampler(train_dataset)
@@ -128,7 +128,7 @@ def train(train_dataset, model, tokenizer):
             loss = outputs[0]
 
             if N_GPU > 1:
-                loss = loss.mean() # mean() to average on multi-gpu parallel training
+                loss = loss.mean()  # mean() to average on multi-gpu parallel training
             if GRADIENT_ACCUMULATION_STEPS > 1:
                 loss = loss / GRADIENT_ACCUMULATION_STEPS
             if FP16:
@@ -166,7 +166,7 @@ def train(train_dataset, model, tokenizer):
                         SAVE_STEPS > 0 and
                         global_step % SAVE_STEPS == 0):
                     output_dir = os.path.join(
-                        OUTPUT_DIR, 'checkpoint-{}'.format(global_step))
+                        output_path, 'checkpoint-{}'.format(global_step))
                     if not os.path.exists(output_dir):
                         os.makedirs(output_dir)
                     model.save_pretrained(output_dir)
@@ -272,7 +272,7 @@ def main():
     # prep output dir and call train
     if not os.path.exists(OUTPUT_DIR):
         os.makedirs(OUTPUT_DIR)
-    global_step, tr_loss = train(train_dataset, model, tokenizer)
+    global_step, tr_loss = train(train_dataset, model, tokenizer, OUTPUT_DIR)
     logger.info(" global_step = %s, average loss = %s", global_step, tr_loss)
 
     # save trained data, OUTPUT_DIR already exist due to train() function
