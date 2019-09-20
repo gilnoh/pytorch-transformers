@@ -9,6 +9,7 @@ import numpy as np
 import torch
 import csv
 from torch.utils.data import (DataLoader, RandomSampler, TensorDataset)
+from pathlib import Path
 from tensorboardX import SummaryWriter
 from tqdm import tqdm, trange
 from pytorch_transformers import (BertConfig, BertForSequenceClassification,
@@ -36,7 +37,7 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 # training params
 TRAIN_BATCH_SIZE = 8     # aka per-gpu batch size
-NUM_TRAIN_EPOCHS = 3.0
+NUM_TRAIN_EPOCHS = 1.0
 LEARNING_RATE = 2e-5  # 2e-5, default from run_glue example description
 WEIGHT_DECAY = 0.0
 ADAM_EPSILON = 1e-8  # 1e-8, default from run_glue args
@@ -45,7 +46,7 @@ MAX_GRAD_NORM = 1.0
 SEED = 42
 GRADIENT_ACCUMULATION_STEPS = 1
 LOGGING_STEPS = 50
-SAVE_STEPS = 1000
+SAVE_STEPS = 600
 LOCAL_RANK = -1  # ftm. (local rank not used) changing this won't work
 N_GPU = 1        # ftm. (multi GPU not used) changing this won't work
 FP16 = False
@@ -60,7 +61,8 @@ def set_seed(seed_num):
     torch.cuda.manual_seed_all(seed_num)
 
 
-def train(train_dataset, model, tokenizer, output_path):
+def train(train_dataset, model, tokenizer, output_path,
+          disable_progress_bar=False):
     """ Train the model """
     tb_writer = SummaryWriter()
     train_sampler = RandomSampler(train_dataset)
@@ -112,11 +114,12 @@ def train(train_dataset, model, tokenizer, output_path):
     global_step = 0
     tr_loss, logging_loss = 0.0, 0.0
     model.zero_grad()
-    train_iterator = trange(int(NUM_TRAIN_EPOCHS), desc="Epoch", disable=False)
+    train_iterator = trange(int(NUM_TRAIN_EPOCHS), desc="Epoch",
+                            disable=disable_progress_bar)
     set_seed(SEED)
     for _ in train_iterator:
         epoch_iterator = tqdm(train_dataloader, desc="Iteration",
-                              disable=False)
+                              disable=disable_progress_bar)
         for step, batch in enumerate(epoch_iterator):
             model.train()
             batch = tuple(t.to(device) for t in batch)
@@ -165,13 +168,20 @@ def train(train_dataset, model, tokenizer, output_path):
                 if (LOCAL_RANK in [-1, 0] and
                         SAVE_STEPS > 0 and
                         global_step % SAVE_STEPS == 0):
+                    # make checkpoint path and save model as of now
                     output_dir = os.path.join(
-                        output_path, 'checkpoint-{}'.format(global_step))
+                        output_path, 'latest_checkpoint')  # only the last one
                     if not os.path.exists(output_dir):
                         os.makedirs(output_dir)
                     model.save_pretrained(output_dir)
-                    # torch.save(args, os.path.join(output_dir, 'training_args.bin'))
-                    # above line: saving training arguments, we skip this.
+                    # leave a marking touch of current global step
+                    for p in Path(output_dir).glob("step-*"):  # del previous
+                        p.unlink()
+                    global_step_marking = open(  # touch a file
+                        os.path.join(output_dir,
+                                     'step-{}'.format(global_step)),
+                        "w+")
+                    global_step_marking.close()
                     logger.info("Saving model checkpoint to %s", output_dir)
 
     tb_writer.close()
@@ -247,8 +257,9 @@ def main():
 
     # model and data
     PRETRAINED = "bert-base-multilingual-uncased"
-    OUTPUT_DIR = "/home/tailblues/omq/models/tmt_base"
-    DATA = "/home/tailblues/omq/dataset/mnli_dev_matched.tmt.tsv"
+    # PRETRAINED = "/home/tailblues/omq/models/test/latest_checkpoint"
+    OUTPUT_DIR = "/home/tailblues/omq/models/test"
+    DATA = "/home/tailblues/omq/dataset/mnli_training.tmt.tsv"
     LABEL_LIST = ["NO", "YES"]
 
     # prepare model and tokenizer

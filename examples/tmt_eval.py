@@ -100,7 +100,7 @@ def main():
     DO_LOWER_CASE = True
 
     # model and data
-    CHECKPOINT = "/home/tailblues/omq/models/tmt_base"
+    CHECKPOINT = "/home/tailblues/omq/models/tmt_mnli_base_128"
     DATA = "/home/tailblues/omq/dataset/mnli_dev_matched.tmt.tsv"
     LABEL_LIST = ["NO", "YES"]
 
