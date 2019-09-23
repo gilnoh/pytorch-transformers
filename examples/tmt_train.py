@@ -148,8 +148,8 @@ def train(train_dataset, model, tokenizer, output_path,
 
             tr_loss += loss.item()
             if (step + 1) % GRADIENT_ACCUMULATION_STEPS == 0:
-                scheduler.step()  # Update learning rate schedule
-                optimizer.step()
+                optimizer.step()  # step optimizer & scheduler
+                scheduler.step()  # optimizer first, as PyTorch warn says
                 model.zero_grad()
                 global_step += 1
 
